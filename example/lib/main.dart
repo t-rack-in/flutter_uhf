@@ -42,30 +42,41 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> connectUhf() async {
-    final openMessage =  await Uhf.openUhf;
+    final openMessage = await Uhf.openUhf;
     showResult(openMessage);
   }
 
+  Future<void> isSupport() async {
+    final isSupport = await Uhf.supportUhf;
+    showResult(isSupport ? "support" : "not support");
+  }
+
   void showResult(String openMessage) {
-     _scaffoldStateKey.currentState.showSnackBar(new SnackBar(content: new Text(openMessage)));
+    _scaffoldStateKey.currentState
+        .showSnackBar(new SnackBar(content: new Text(openMessage)));
   }
 
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      home: new Scaffold(
-          key: _scaffoldStateKey,
-          appBar: new AppBar(
-            title: const Text('Plugin example app'),
-          ),
-          body: new SingleChildScrollView(
-            child: new Padding(padding:EdgeInsets.all(12.0),
-            child: new Column(
-              children: <Widget>[
-                new RaisedButton(onPressed:connectUhf, child: new Text("连接模块"),)
-              ],
-            ),)
-          )),
-    );
+        home: new Scaffold(
+      key: _scaffoldStateKey,
+      appBar: new AppBar(
+        title: const Text('Plugin example app'),
+      ),
+      body: new GridView.count(
+        crossAxisSpacing: 12.0,
+        mainAxisSpacing: 3.0,
+        children: <Widget>[
+          new RaisedButton(
+              onPressed: isSupport, child: new Text("is support?")),
+          new RaisedButton(
+            onPressed: connectUhf,
+            child: new Text("connect"),
+          )
+        ],
+        crossAxisCount: 3,
+      ),
+    ));
   }
 }

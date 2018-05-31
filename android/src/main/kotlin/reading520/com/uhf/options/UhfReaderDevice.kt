@@ -31,14 +31,14 @@ class UhfReaderDevice private constructor() {
     /**
      * 开启电源
      */
-    fun powerOn(){
+    fun psampoweron(){
         devPower?.psampoweron()
     }
 
     /**
      * 关闭电源
      */
-    fun powerOff(){
+    fun psampoweroff(){
         devPower?.psampoweroff()
     }
 }
