@@ -9,6 +9,13 @@ public class SwiftUhfPlugin: NSObject, FlutterPlugin {
   }
 
   public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-    result("iOS " + UIDevice.current.systemVersion)
+    if call.method=="getPlatformVersion" {
+          result("iOS " + UIDevice.current.systemVersion)
+    }else if(call.method == "isSupport"){
+        result(false)
+    }else{
+        result(FlutterMethodNotImplemented)
+    }
+  
   }
 }
