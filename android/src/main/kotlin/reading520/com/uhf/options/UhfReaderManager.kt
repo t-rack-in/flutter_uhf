@@ -18,7 +18,7 @@ class UhfReaderManager private constructor() {
     private var startFlag = false
     private var isScan = false
     private val scanThread: InventoryThread = InventoryThread()
-
+    private var listener: OnScanListener? = null
     //是否连接模块
     fun isConnect() = uhfReader != null
 
@@ -39,18 +39,37 @@ class UhfReaderManager private constructor() {
         return sharedPreferences.getString(PORT_PATH, SERIAL_PORT_PATH)
     }
 
+    interface OnScanListener {
+        fun onRecive(epc: String)
+    }
+
+    fun setOnScanListener(listener: OnScanListener) {
+        this.listener = listener
+    }
+
     /**
      * 开始扫描
      */
-    fun startScanning():Boolean {
-        if (uhfReader==null || uhfReaderDevice==null){
+    fun startScanning(): Boolean {
+        if (uhfReader == null || uhfReaderDevice == null) {
             return false
         }
-        startFlag = true
-        isScan = true
-        if (!scanThread.isAlive) {
-            scanThread.start()
+        if (startFlag){
+            try {
+                val localFileWriterOn = FileWriter(File(FILE_WRITE))
+                localFileWriterOn.write("1")
+                localFileWriterOn.close()
+            } catch (e: Exception) {
+                println("异常")
+            }
         }
+        if (!scanThread.isAlive && !startFlag) {
+            scanThread.start()
+            startFlag=true
+        }
+
+        isScan = true
+
         return true
     }
 
@@ -60,14 +79,17 @@ class UhfReaderManager private constructor() {
             while (startFlag) {
                 //	reader.stopInventoryMulti()
                 if (!isScan) {
-                    return
+                   continue
                 }
+                println("继续工作了")
                 uhfReader?.run {
                     inventoryRealTime()?.run {
                         map {
                             Tools.Bytes2HexString(it, it.size)
                         }.forEach {
-                            print(it)
+                            listener?.run {
+                                onRecive(it)
+                            }
                         }
                         try {
                             Thread.sleep(40)
@@ -95,8 +117,8 @@ class UhfReaderManager private constructor() {
                 val localFileWriterOn = FileWriter(File(FILE_WRITE))
                 localFileWriterOn.write("1")
                 localFileWriterOn.close()
-                if (firmware!= null) {
-    //				reader.setWorkArea(3);//设置成欧标
+                if (firmware != null) {
+                    //				reader.setWorkArea(3);//设置成欧标
                 }
                 true
             } ?: false
@@ -121,9 +143,67 @@ class UhfReaderManager private constructor() {
         }
     }
 
+    /**
+     * 修改电子标签
+     */
+    fun changeEpcContent(epc: String, newEpc: String): UhfResult {
+        var result: UhfResult = UhfResult.Fail(ErrorCode.CHANGE_LABEL_FAIL)
+        uhfReader?.let {
+            try {
+                println("$epc-$newEpc")
+                it.selectEpc(Tools.HexString2Bytes(epc))
+                val newEpc = Tools.HexString2Bytes(newEpc)
+                var writeFlag = it.writeTo6C(Tools.HexString2Bytes("00000000"), 1, 2, newEpc.size / 2, newEpc)
+                if (!writeFlag) {
+                    writeFlag = it.writeTo6C(Tools.HexString2Bytes("61994805"), 1, 2, newEpc.size / 2, newEpc)
+                }
+                if (writeFlag) {
+                    result = UhfResult.Success("电子标签修改成功")
+                }
+            } catch (e: Exception) {
+                println(e)
+                result = UhfResult.Fail(ErrorCode.CHANGE_LABEL_FAIL)
+            }
+        }
+        if (!isConnect() || !isPowerOpen()) {
+            result = UhfResult.Fail(ErrorCode.POWER_OR_SERIAL_NOT_OPEN)
+        }
+        return result
+
+    }
+
+    //修改电子标签长度
+    fun changeLabelLength(epc: String, length: String): UhfResult {
+        var result: UhfResult = UhfResult.Fail(ErrorCode.CHANGE_LABEL_FAIL)
+        if (isConnect() && isPowerOpen()) {
+            try {
+                uhfReader?.let {
+                    println("$epc-$length")
+                    it.selectEpc(Tools.HexString2Bytes(epc))
+                    val dataArray = Tools.HexString2Bytes(length)
+                    val writeFlag = it.writeTo6C(Tools.HexString2Bytes("00000000"), 1, 1, dataArray.size / 2, dataArray)
+                    if (!writeFlag) {
+                        val lockFlag = it.lock6C(Tools.HexString2Bytes("61994805"), 2, 0)
+                        if (lockFlag && it.writeTo6C(Tools.HexString2Bytes("61994805"), 1, 1, dataArray.size / 2, dataArray)) {
+                            result = UhfResult.Success("change success")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            result = UhfResult.Fail(ErrorCode.POWER_OR_SERIAL_NOT_OPEN)
+        }
+        return result
+    }
+
     //停止扫描
     fun stopScanning() {
         isScan = false
+
+    }
+    fun closeSave(){
         //关闭
         try {
             val localFileWriterOff = FileWriter(File(FILE_WRITE))
@@ -139,21 +219,30 @@ class UhfReaderManager private constructor() {
      */
     fun psampoweroff() {
         stopScanning()
+        closeSave()
         uhfReaderDevice?.psampoweroff()
     }
 
     //关闭读写器
     fun close() {
-        uhfReaderDevice?.psampoweroff()
+        psampoweroff()
+        try {
+            scanThread.interrupt()
+        } catch (e: Throwable) {
+        }
         uhfReader?.close()
         uhfReader = null
     }
 }
 
 enum class ErrorCode private constructor(val text: String) {
-    SERIAL_PORT_INIT_ERROR("serialport init fail"),//串口为初始化
-    SERIAL_PORT_NOT_INIT("serialport not init"),//串口为初始化
-    OPEN_POWER_ERROR("power open fail")//电源开启失败
+    SERIAL_PORT_INIT_ERROR("串口初始化失败"),
+    SERIAL_PORT_NOT_INIT("串口未初始化"),
+    OPEN_POWER_ERROR("电源开启失败"),
+    POWER_NOT_OPEN("电源未开启"),
+    POWER_OR_SERIAL_NOT_OPEN("串口或电源为开启初始化"),
+    CHANGE_LABEL_FAIL("电子标签修改失败"),
+    EPC_FORMAT_ERR("电子标签必须是 0-9a-f"),
 }
 
 sealed class UhfResult {
