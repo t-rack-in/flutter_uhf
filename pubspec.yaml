@@ -1,8 +1,8 @@
 name: uhf
 description: A uhf plugin only support android
 version: 0.0.1
-author:
-homepage:
+author: wangyang
+homepage: http://www.reading520.cn/#/index
 
 dependencies:
   flutter:

@@ -35,7 +35,18 @@ class Uhf {
 
   //开启电源
   static Future<UhfResult> get connectAndOpenUhf async {
-    return await invoke('connectAndOpenUhf');
+    UhfResult result;
+    try {
+      final text = await _channel.invokeMethod("connectAndOpenUhf",
+      <String,String>{
+        "password":"xxxxxxxx",// a password for epc，if only  one use password
+        "password2":"xxxxxxxx",//a password for epc，if you have anther password add this params,if more you can change resource to array
+      });
+      result = UhfResult.createSuccess(text);
+    } on PlatformException catch (e) {
+      result = UhfResult.createFail(e);
+    }
+    return result;
   }
 
   //初始化串口

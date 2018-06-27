@@ -75,14 +75,16 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
                 result.success(uhfCanUse())
             }
             call.method == "isPowerOpen" -> result.success(uhfReaderManager.isPowerOpen())
-            call.method=="openUhf"->{
-                val powerResult = UhfReaderManager.getInstance().psampoweron()
-                when (powerResult) {
-                    is UhfResult.Success -> result.success(powerResult.text)
-                    is UhfResult.Fail -> result.error("-1", powerResult.code.text, null)
-                }
-            }
+//            call.method=="openUhf"->{
+//                val powerResult = UhfReaderManager.getInstance().psampoweron()
+//                when (powerResult) {
+//                    is UhfResult.Success -> result.success(powerResult.text)
+//                    is UhfResult.Fail -> result.error("-1", powerResult.code.text, null)
+//                }
+//            }
             call.method == "connectAndOpenUhf" -> {
+                uhfReaderManager.password=call.argument("password")
+                uhfReaderManager.password2=call.argument("password2")
                 if (!uhfReaderManager.isConnect() && !uhfReaderManager.connect(registrar.context())) {
                     result.error("-1", ErrorCode.SERIAL_PORT_INIT_ERROR.text, null)
                     return

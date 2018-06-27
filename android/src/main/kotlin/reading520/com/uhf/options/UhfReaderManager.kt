@@ -19,6 +19,8 @@ class UhfReaderManager private constructor() {
     private var isScan = false
     private val scanThread: InventoryThread = InventoryThread()
     private var listener: OnScanListener? = null
+    var password:String=""
+    var password2:String=""
     //是否连接模块
     fun isConnect() = uhfReader != null
 
@@ -153,9 +155,9 @@ class UhfReaderManager private constructor() {
                 println("$epc-$newEpc")
                 it.selectEpc(Tools.HexString2Bytes(epc))
                 val newEpc = Tools.HexString2Bytes(newEpc)
-                var writeFlag = it.writeTo6C(Tools.HexString2Bytes("00000000"), 1, 2, newEpc.size / 2, newEpc)
+                var writeFlag = it.writeTo6C(Tools.HexString2Bytes(password), 1, 2, newEpc.size / 2, newEpc)
                 if (!writeFlag) {
-                    writeFlag = it.writeTo6C(Tools.HexString2Bytes("61994805"), 1, 2, newEpc.size / 2, newEpc)
+                    writeFlag = it.writeTo6C(Tools.HexString2Bytes(password2), 1, 2, newEpc.size / 2, newEpc)
                 }
                 if (writeFlag) {
                     result = UhfResult.Success("电子标签修改成功")
@@ -181,10 +183,10 @@ class UhfReaderManager private constructor() {
                     println("$epc-$length")
                     it.selectEpc(Tools.HexString2Bytes(epc))
                     val dataArray = Tools.HexString2Bytes(length)
-                    val writeFlag = it.writeTo6C(Tools.HexString2Bytes("00000000"), 1, 1, dataArray.size / 2, dataArray)
+                    val writeFlag = it.writeTo6C(Tools.HexString2Bytes(password), 1, 1, dataArray.size / 2, dataArray)
                     if (!writeFlag) {
-                        val lockFlag = it.lock6C(Tools.HexString2Bytes("61994805"), 2, 0)
-                        if (lockFlag && it.writeTo6C(Tools.HexString2Bytes("61994805"), 1, 1, dataArray.size / 2, dataArray)) {
+                        val lockFlag = it.lock6C(Tools.HexString2Bytes(password2), 2, 0)
+                        if (lockFlag && it.writeTo6C(Tools.HexString2Bytes(password2), 1, 1, dataArray.size / 2, dataArray)) {
                             result = UhfResult.Success("change success")
                         }
                     }
