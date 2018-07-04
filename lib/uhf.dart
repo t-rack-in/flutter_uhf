@@ -29,29 +29,38 @@ class Uhf {
   }
 
   //开启电源
-  static Future<UhfResult> get openUhf async {
-    return await invoke('openUhf');
+  static Future<bool> get openUhf async {
+    UhfResult isSuccess = await _channel.invokeMethod("openUhf");
+    return isSuccess.isSuccess;
   }
 
   //开启电源
   static Future<UhfResult> get connectAndOpenUhf async {
     UhfResult result;
+    print("开始连接");
     try {
       final text = await _channel.invokeMethod("connectAndOpenUhf",
       <String,String>{
-        "password":"xxxxxxxx",// a password for epc，if only  one use password
-        "password2":"xxxxxxxx",//a password for epc，if you have anther password add this params,if more you can change resource to array
+        "password":"00000000",// a password for epc，if only  one use password
+        "password2":"61994087",//a password for epc，if you have anther password add this params,if more you can change resource to array
       });
+      print("没有异常");
       result = UhfResult.createSuccess(text);
+      print("获得结果");
     } on PlatformException catch (e) {
+      print("异常了");
+      print(e);
       result = UhfResult.createFail(e);
     }
     return result;
   }
 
   //初始化串口
-  static Future<UhfResult> get connect async {
-    return await invoke("connect");
+  static Future<bool> get connect async {
+    print("开始连接电源");
+    UhfResult result = await invoke("connect");
+    print("连接电源完毕"+result.message);
+    return result.isSuccess;
   }
 
   //开始扫描

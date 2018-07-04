@@ -110,9 +110,21 @@ class UhfReaderManager private constructor() {
      * 串口初始化
      */
     fun connect(context: Context): Boolean {
+        println("正在初始化接口")
+        println("难道是context为null？")
         if (uhfReader != null) return true
-        UhfReader.setPortPath(getSerialPortPath(context))
-        uhfReader = UhfReader.getInstance()
+        var path =getSerialPortPath(context)
+        println("获取到path"+path)
+        UhfReader.setPortPath(path)
+        println("设置path成功")
+        try {
+            println("我为什么异常呢")
+            uhfReader = UhfReader.getInstance()
+        } catch (e: Exception) {
+            println("我为什么异常呢"+e.message)
+            e.printStackTrace()
+        }
+        println("获取到uhfReader"+(uhfReader==null))
         try {
             return uhfReader?.run {
                 setOutputPower(26)

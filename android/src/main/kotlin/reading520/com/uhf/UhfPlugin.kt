@@ -19,6 +19,19 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
     private val sharedPreferences: SharedPreferences by lazy { registrar.context().getSharedPreferences(UhfReaderManager.SHARE_PREFERENCES, Context.MODE_PRIVATE) }
     private var eventChannel:EventChannel?=null
     private var eventSink:EventChannel.EventSink?=null
+    init {
+        eventChannel= EventChannel(registrar.messenger(),"flutter.io/uhf/uhf")
+        eventChannel!!.setStreamHandler(object :EventChannel.StreamHandler{
+            override fun onListen(any: Any?, sink: EventChannel.EventSink?) {
+                eventSink=sink
+            }
+
+            override fun onCancel(any: Any?) {
+                eventSink=null
+            }
+
+        })
+    }
     companion object {
         @JvmStatic
         fun registerWith(registrar: Registrar) {
@@ -59,29 +72,16 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
                 result.success("Android ${android.os.Build.VERSION.RELEASE}")
             }
             call.method == "isSupport" ->{
-                if (eventChannel==null){
-                    eventChannel= EventChannel(registrar.messenger(),"flutter.io/uhf/uhf")
-                    eventChannel!!.setStreamHandler(object :EventChannel.StreamHandler{
-                        override fun onListen(any: Any?, sink: EventChannel.EventSink?) {
-                            eventSink=sink
-                        }
-
-                        override fun onCancel(any: Any?) {
-                            eventSink=null
-                        }
-
-                    })
-                }
                 result.success(uhfCanUse())
             }
             call.method == "isPowerOpen" -> result.success(uhfReaderManager.isPowerOpen())
-//            call.method=="openUhf"->{
-//                val powerResult = UhfReaderManager.getInstance().psampoweron()
-//                when (powerResult) {
-//                    is UhfResult.Success -> result.success(powerResult.text)
-//                    is UhfResult.Fail -> result.error("-1", powerResult.code.text, null)
-//                }
-//            }
+            call.method=="openUhf"->{
+                val powerResult = UhfReaderManager.getInstance().psampoweron()
+                when (powerResult) {
+                    is UhfResult.Success -> result.success(powerResult.text)
+                    is UhfResult.Fail -> result.error("-1", powerResult.code.text, null)
+                }
+            }
             call.method == "connectAndOpenUhf" -> {
                 uhfReaderManager.password=call.argument("password")
                 uhfReaderManager.password2=call.argument("password2")
@@ -135,6 +135,12 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
               }
             }
             call.method == "connect" -> {
+                println("正在尝试连接")
+                println("是否为nullconttext"+(registrar.context()==null))
+                if (registrar.context()==null){
+                    result.error("-1", "connect fail", null)
+                    return
+                }
                 if (uhfReaderManager.connect(registrar.context())) {
                     result.success("connect success")
                 } else {
