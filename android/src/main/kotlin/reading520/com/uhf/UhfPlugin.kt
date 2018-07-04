@@ -135,8 +135,6 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
               }
             }
             call.method == "connect" -> {
-                println("正在尝试连接")
-                println("是否为nullconttext"+(registrar.context()==null))
                 if (registrar.context()==null){
                     result.error("-1", "connect fail", null)
                     return

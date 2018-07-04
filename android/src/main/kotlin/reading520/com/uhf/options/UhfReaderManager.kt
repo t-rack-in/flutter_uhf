@@ -19,8 +19,8 @@ class UhfReaderManager private constructor() {
     private var isScan = false
     private val scanThread: InventoryThread = InventoryThread()
     private var listener: OnScanListener? = null
-    var password:String=""
-    var password2:String=""
+    var password: String = ""
+    var password2: String = ""
     //是否连接模块
     fun isConnect() = uhfReader != null
 
@@ -56,7 +56,7 @@ class UhfReaderManager private constructor() {
         if (uhfReader == null || uhfReaderDevice == null) {
             return false
         }
-        if (startFlag){
+        if (startFlag) {
             try {
                 val localFileWriterOn = FileWriter(File(FILE_WRITE))
                 localFileWriterOn.write("1")
@@ -67,7 +67,7 @@ class UhfReaderManager private constructor() {
         }
         if (!scanThread.isAlive && !startFlag) {
             scanThread.start()
-            startFlag=true
+            startFlag = true
         }
 
         isScan = true
@@ -81,9 +81,8 @@ class UhfReaderManager private constructor() {
             while (startFlag) {
                 //	reader.stopInventoryMulti()
                 if (!isScan) {
-                   continue
+                    continue
                 }
-                println("继续工作了")
                 uhfReader?.run {
                     inventoryRealTime()?.run {
                         map {
@@ -110,21 +109,11 @@ class UhfReaderManager private constructor() {
      * 串口初始化
      */
     fun connect(context: Context): Boolean {
-        println("正在初始化接口")
-        println("难道是context为null？")
         if (uhfReader != null) return true
-        var path =getSerialPortPath(context)
-        println("获取到path"+path)
+        var path = getSerialPortPath(context)
         UhfReader.setPortPath(path)
-        println("设置path成功")
-        try {
-            println("我为什么异常呢")
-            uhfReader = UhfReader.getInstance()
-        } catch (e: Exception) {
-            println("我为什么异常呢"+e.message)
-            e.printStackTrace()
-        }
-        println("获取到uhfReader"+(uhfReader==null))
+        uhfReader = UhfReader.getInstance()
+
         try {
             return uhfReader?.run {
                 setOutputPower(26)
@@ -217,7 +206,8 @@ class UhfReaderManager private constructor() {
         isScan = false
 
     }
-    fun closeSave(){
+
+    fun closeSave() {
         //关闭
         try {
             val localFileWriterOff = FileWriter(File(FILE_WRITE))
