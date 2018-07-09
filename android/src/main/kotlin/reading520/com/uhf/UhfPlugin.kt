@@ -1,8 +1,8 @@
 package reading520.com.uhf
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.SharedPreferences
+import android.content.*
+import android.device.ScanDevice
 import io.flutter.plugin.common.EventChannel
 
 import io.flutter.plugin.common.MethodChannel
@@ -19,7 +19,29 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
     private val sharedPreferences: SharedPreferences by lazy { registrar.context().getSharedPreferences(UhfReaderManager.SHARE_PREFERENCES, Context.MODE_PRIVATE) }
     private var eventChannel:EventChannel?=null
     private var eventSink:EventChannel.EventSink?=null
+    private var broadCastEventSink:EventChannel.EventSink?=null
+    private var broadCastEvent:EventChannel?=null
+    private val SCAN_ACTION = "scan.rcv.message"
+    private val scanDevice: ScanDevice = ScanDevice()
+    private val mScanReceiver = object : BroadcastReceiver() {
+
+        override fun onReceive(context: Context, intent: Intent) {
+            val barocode = intent.getByteArrayExtra("barocode")
+            val barocodelen = intent.getIntExtra("length", 0)
+            val barcodeStr = String(barocode, 0, barocodelen)
+            println("我接收到了"+barcodeStr)
+            broadCastEventSink?.success(barcodeStr)
+
+        }
+
+    }
     init {
+        scanDevice.outScanMode=0
+        scanDevice.startScan()
+        val filter = IntentFilter()
+        filter.addAction(SCAN_ACTION)
+        registrar.activity().registerReceiver(mScanReceiver, filter)
+        println("我被注册了")
         eventChannel= EventChannel(registrar.messenger(),"flutter.io/uhf/uhf")
         eventChannel!!.setStreamHandler(object :EventChannel.StreamHandler{
             override fun onListen(any: Any?, sink: EventChannel.EventSink?) {
@@ -31,12 +53,29 @@ class UhfPlugin private constructor(private val registrar: Registrar) : MethodCa
             }
 
         })
+
+        broadCastEvent= EventChannel(registrar.messenger(),"flutter.io/uhf/broad")
+        broadCastEvent?.setStreamHandler(object : EventChannel.StreamHandler{
+            override fun onListen(any: Any?, sink: EventChannel.EventSink?) {
+                broadCastEventSink=sink
+            }
+
+            override fun onCancel(any: Any?) {
+                broadCastEventSink=null
+            }
+
+        })
+
     }
+
     companion object {
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             val channel = MethodChannel(registrar.messenger(), "uhf")
             channel.setMethodCallHandler(UhfPlugin(registrar))
+
+
+            //   注册广播 接收烧苗数据
 
         }
 

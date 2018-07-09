@@ -155,10 +155,10 @@ class UhfReaderManager private constructor() {
             try {
                 println("$epc-$newEpc")
                 it.selectEpc(Tools.HexString2Bytes(epc))
-                val newEpc = Tools.HexString2Bytes(newEpc)
-                var writeFlag = it.writeTo6C(Tools.HexString2Bytes(password), 1, 2, newEpc.size / 2, newEpc)
+                val hexEpc = Tools.HexString2Bytes(newEpc)
+                var writeFlag = it.writeTo6C(Tools.HexString2Bytes(password), 1, 2, hexEpc.size / 2, hexEpc)
                 if (!writeFlag) {
-                    writeFlag = it.writeTo6C(Tools.HexString2Bytes(password2), 1, 2, newEpc.size / 2, newEpc)
+                    writeFlag = it.writeTo6C(Tools.HexString2Bytes(password2), 1, 2, hexEpc.size / 2, hexEpc)
                 }
                 if (writeFlag) {
                     result = UhfResult.Success("电子标签修改成功")
